@@ -263,7 +263,7 @@ Rules:
                 try:
                     result = self._execute_tool(name, args)
                     ok = True
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     result = {"error": str(exc)}
                     ok = False
                 duration = round(time.time() - t0, 2)
@@ -298,11 +298,52 @@ Rules:
         constraints: str = "",
         fast_mode: bool = True,
     ) -> dict[str, Any]:
+        self._emit({"step": 0, "phase": "prefetch", "message": f"Searching POIs in {destination}"})
+        try:
+            seeded = self._execute_tool(
+                "search_pois",
+                {
+                    "city": destination,
+                    "query": None,
+                    "interests": interests or None,
+                    "limit": 40 if fast_mode else 30,
+                },
+            )
+            self._emit(
+                {
+                    "step": 0,
+                    "phase": "prefetch_result",
+                    "message": _tool_result_summary("search_pois", seeded),
+                    "ok": True,
+                }
+            )
+        except Exception as exc:
+            self._emit({"step": 0, "phase": "prefetch_result", "message": str(exc), "ok": False})
+            raise
+
+        if not self.tool_state["pois"]:
+            raise RuntimeError(
+                f"No mapped places were found for {destination}. "
+                "Try a more specific city name or different interests."
+            )
+
+        catalog = [
+            {
+                "poi_id": poi["poi_id"],
+                "name": poi["name"],
+                "category": poi.get("category"),
+                "lat": poi.get("lat"),
+                "lon": poi.get("lon"),
+            }
+            for poi in list(self.tool_state["pois"].values())[:40]
+        ]
         prompt = (
             f"Plan a {days}-day {pace}-pace trip to {destination}.\n"
             f"Interests: {', '.join(interests) or 'general sightseeing'}.\n"
             f"Constraints: {constraints or 'none'}.\n"
-            "Use tools, then return the itinerary JSON."
+            "These POIs were already retrieved. Use only these poi_id values unless you call search_pois again:\n"
+            f"{json.dumps(catalog, ensure_ascii=False)}\n"
+            "You may call tools for extra coverage, then return the itinerary JSON."
         )
         raw = self._run_loop(prompt, fast_mode=fast_mode)
         return self._finalize(raw)
