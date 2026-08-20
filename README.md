@@ -1,5 +1,8 @@
 # Trip Planner AI Agent
 
+**An AI Engineering / Automation Portfolio Project** 
+*By Randall James | Data Analyst & Project Coordinator*
+
 Production-style Streamlit trip planner built as a Codecademy AI engineering capstone.
 
 The app does more than chat. An agent calls tools against live OpenStreetMap data, optionally retrieves Wikivoyage context with TF-IDF RAG, validates that every stop is a real POI, and lets you refine the plan in natural language.
@@ -174,7 +177,12 @@ python -m unittest discover -s tests -v
 - PDF / shareable itinerary export
 - Saved trips behind authentication
 
-## Credits
+**About Me**  
+Randall James | Data Coordinator / Data Analyst / Project Manager  
+St. Louis, MO (O'Fallon area) | Open to remote, hybrid, or on-site within ~30 min commute  
+[LinkedIn](https://www.linkedin.com/in/randall-james-stl) | [GitHub](https://github.com/senseirandystl) | randalljames34@pm.me
+
+*This project was created as part of my professional portfolio to demonstrate AI Engineering / Automation capabilities.*
 
 Built for the Codecademy Trip Planner AI Agent capstone. Map data © OpenStreetMap contributors. Travel text from Wikivoyage when RAG is enabled.
 
