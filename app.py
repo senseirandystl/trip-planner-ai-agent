@@ -229,12 +229,17 @@ def generate_itinerary(cfg: dict) -> None:
             st.session_state.trace = agent.trace
             _persist()
             status.update(label="Itinerary ready", state="complete")
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
+            st.session_state.trace = agent.trace
+            st.session_state.pois = agent.tool_state.get("pois") or {}
             status.update(label="Planning failed", state="error")
             st.error(str(exc))
             if getattr(exc, "args", None):
                 with st.expander("Details"):
                     st.exception(exc)
+            if agent.trace:
+                with st.expander("Agent trace"):
+                    render_trace(agent.trace)
 
 
 def refine_itinerary(cfg: dict, request: str, target_day: int | None) -> None:
@@ -262,13 +267,13 @@ def refine_itinerary(cfg: dict, request: str, target_day: int | None) -> None:
         st.session_state.trace = (st.session_state.trace or []) + agent.trace
         _persist()
         st.success("Itinerary updated.")
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         st.error(f"Refinement failed: {exc}")
         with st.expander("Details"):
             st.exception(exc)
 
 
-def render_itinerary(itin: dict, destination: str) -> None:
+def render_itinerary(itin: dict, destination: str, *, key_prefix: str = "plan") -> None:
     st.subheader(f"{itin.get('destination', destination)}")
     if itin.get("notes"):
         st.info(itin["notes"])
@@ -285,7 +290,7 @@ def render_itinerary(itin: dict, destination: str) -> None:
                 if not items:
                     st.caption("No stops")
                     continue
-                for item in items:
+                for idx, item in enumerate(items):
                     st.markdown(f"**{item.get('name', 'Untitled')}**")
                     st.caption(f"{item.get('category', '')} · `{item.get('poi_id', '')}`")
                     if item.get("why"):
@@ -295,11 +300,11 @@ def render_itinerary(itin: dict, destination: str) -> None:
                     c1, c2 = st.columns(2)
                     poi_id = item.get("poi_id", "")
                     with c1:
-                        if st.button("👍", key=f"up-{day_num}-{block}-{poi_id}"):
+                        if st.button("👍", key=f"{key_prefix}-up-{day_num}-{block}-{idx}-{poi_id}"):
                             record_feedback(destination, poi_id, "up")
                             st.toast(f"Upvoted {item.get('name')}")
                     with c2:
-                        if st.button("👎", key=f"down-{day_num}-{block}-{poi_id}"):
+                        if st.button("👎", key=f"{key_prefix}-down-{day_num}-{block}-{idx}-{poi_id}"):
                             record_feedback(destination, poi_id, "down")
                             st.toast(f"Downvoted {item.get('name')}")
 
@@ -314,6 +319,7 @@ def render_itinerary(itin: dict, destination: str) -> None:
         data=json.dumps(itin, indent=2, ensure_ascii=False),
         file_name="itinerary.json",
         mime="application/json",
+        key=f"{key_prefix}-download-json",
     )
 
 
@@ -366,7 +372,7 @@ def main() -> None:
             ["Itinerary", "Map", "Refine", "Agent trace"]
         )
         with tab_plan:
-            render_itinerary(itin, cfg["destination"])
+            render_itinerary(itin, cfg["destination"], key_prefix="plan")
         with tab_map:
             render_map(itin, dark=cfg["dark_map"])
         with tab_refine:
@@ -379,8 +385,7 @@ def main() -> None:
             target_day = None if target == "Entire trip" else int(target.split()[-1])
             if st.button("Apply refinement"):
                 refine_itinerary(cfg, request, target_day)
-            if st.session_state.itinerary:
-                render_itinerary(st.session_state.itinerary, cfg["destination"])
+            st.caption("After a refinement, switch back to the Itinerary tab to review the updated plan.")
         with tab_trace:
             render_trace(st.session_state.trace or [])
     else:
