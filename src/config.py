@@ -17,6 +17,11 @@ DEFAULT_USER_AGENT = os.environ.get(
 
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+OVERPASS_URLS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+]
 WIKIVOYAGE_API = "https://en.wikivoyage.org/w/api.php"
 
 NOMINATIM_MIN_INTERVAL = 1.1  # seconds — Nominatim usage policy
@@ -60,7 +65,7 @@ INTEREST_TO_TAGS: dict[str, list[tuple[str, str]]] = {
         ("natural", "peak|beach|wood|water|hot_spring"),
     ],
     "history": [
-        ("historic", ".*"),
+        ("historic", "monument|memorial|castle|ruins|building|yes"),
         ("tourism", "museum|attraction"),
         ("amenity", "place_of_worship"),
     ],
