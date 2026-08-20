@@ -1,0 +1,41 @@
+{
+  "destination": "Santa Fe, New Mexico, United States",
+  "days": [
+    {
+      "day": 1,
+      "theme": "Plaza, adobe architecture, and New Mexican food",
+      "morning": [
+        {
+          "poi_id": "osm_way_example_1",
+          "name": "Santa Fe Plaza",
+          "category": "history",
+          "why": "A walkable historic core that orients the rest of the trip.",
+          "lat": 35.6870,
+          "lon": -105.9378
+        }
+      ],
+      "afternoon": [
+        {
+          "poi_id": "osm_node_example_2",
+          "name": "Georgia O'Keeffe Museum",
+          "category": "art",
+          "why": "Signature Santa Fe art without leaving downtown.",
+          "lat": 35.6892,
+          "lon": -105.9410
+        }
+      ],
+      "evening": [
+        {
+          "poi_id": "osm_node_example_3",
+          "name": "The Shed",
+          "category": "food",
+          "why": "Classic New Mexican red-and-green chile within a short walk of the plaza.",
+          "lat": 35.6876,
+          "lon": -105.9370
+        }
+      ]
+    }
+  ],
+  "notes": "Example only — live runs replace these IDs with real OSM objects.",
+  "sources": ["https://en.wikivoyage.org/wiki/Santa_Fe"]
+}
