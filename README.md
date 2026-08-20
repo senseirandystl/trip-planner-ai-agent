@@ -75,21 +75,46 @@ trip-planner-ai-agent/
 
 Python 3.10+ recommended.
 
+### macOS / Linux
+
 ```bash
 git clone https://github.com/senseirandystl/trip-planner-ai-agent.git
 cd trip-planner-ai-agent
 
 python -m venv trip-planner-env
-source trip-planner-env/bin/activate   # Windows: trip-planner-env\Scripts\activate
-
+source trip-planner-env/bin/activate
 pip install -r requirements.txt
-streamlit run app.py
+python -m streamlit run app.py
 ```
 
-Paste an OpenAI API key in the sidebar, or export it for local use:
+### Windows (Command Prompt)
 
-```bash
-export OPENAI_API_KEY="sk-..."
+`source` is a Unix command and will fail in `cmd.exe`. Use the venv `Scripts` folder instead:
+
+```bat
+E:
+cd \Github\trip-planner-ai-agent
+
+python -m venv trip-planner-env
+trip-planner-env\Scripts\activate.bat
+python -m pip install -r requirements.txt
+python -m streamlit run app.py
+```
+
+If the prompt shows `(trip-planner-env)` you are in the virtual environment. After that, `python` and `pip` stay inside the venv even if `Scripts` is not on PATH.
+
+PowerShell equivalent:
+
+```powershell
+E:\Github\trip-planner-ai-agent\trip-planner-env\Scripts\Activate.ps1
+```
+
+If PowerShell blocks the script, run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once, or stay in Command Prompt.
+
+Paste an OpenAI API key in the sidebar, or set it for the current session:
+
+```bat
+set OPENAI_API_KEY=sk-...
 ```
 
 For Streamlit Cloud, put the key in `.streamlit/secrets.toml` (never commit that file):
