@@ -8,7 +8,9 @@ from .config import (
     CATEGORY_FROM_TAGS,
     DEFAULT_TAGS,
     INTEREST_TO_TAGS,
-    OVERPASS_URL,
+    NOMINATIM_MIN_INTERVAL,
+    NOMINATIM_URL,
+    OVERPASS_URLS,
 )
 from .feedback import feedback_boost_map
 from .geocoding import city_key, geocode_city
@@ -116,6 +118,66 @@ def _parse_elements(elements: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return pois
 
 
+def _nominatim_fallback(
+    city: str,
+    interests: list[str],
+    *,
+    query: str | None,
+    limit: int,
+    user_agent: str | None,
+) -> list[dict[str, Any]]:
+    """Search Nominatim when Overpass is down or empty."""
+    terms = list(interests or [])
+    if query:
+        terms.append(query)
+    if not terms:
+        terms = ["attraction", "restaurant", "museum", "park"]
+    seen: set[str] = set()
+    pois: list[dict[str, Any]] = []
+    for term in terms[:4]:
+        try:
+            results = request_json(
+                "GET",
+                NOMINATIM_URL,
+                params={
+                    "q": f"{term} in {city}",
+                    "format": "json",
+                    "limit": min(15, max(limit, 10)),
+                    "addressdetails": 0,
+                },
+                headers=osm_headers(user_agent),
+                min_interval=NOMINATIM_MIN_INTERVAL,
+            )
+        except Exception:
+            continue
+        for hit in results or []:
+            name = hit.get("name") or (hit.get("display_name") or "").split(",")[0]
+            if not name or "lat" not in hit:
+                continue
+            osm_type = hit.get("osm_type", "node")
+            osm_id = hit.get("osm_id")
+            poi_id = f"osm_{osm_type}_{osm_id}"
+            if poi_id in seen:
+                continue
+            seen.add(poi_id)
+            kind = hit.get("type") or hit.get("class") or "attraction"
+            pois.append(
+                {
+                    "poi_id": poi_id,
+                    "name": name,
+                    "category": CATEGORY_FROM_TAGS.get(kind, kind),
+                    "lat": float(hit["lat"]),
+                    "lon": float(hit["lon"]),
+                    "url": f"https://www.openstreetmap.org/{osm_type}/{osm_id}",
+                    "osm_type": osm_type,
+                    "osm_id": osm_id,
+                    "_base_score": float(hit.get("importance") or 0),
+                    "_score": float(hit.get("importance") or 0),
+                }
+            )
+    return pois
+
+
 def search_pois(
     city: str,
     query: str | None = None,
@@ -124,11 +186,7 @@ def search_pois(
     radius_m: int = 8000,
     user_agent: str | None = None,
 ) -> dict[str, Any]:
-    """Geocode a city and return ranked POIs for the requested interests.
-
-    `query` is an optional free-text hint (e.g. 'tapas bars') that is mapped
-    onto additional interest keywords when possible.
-    """
+    """Geocode a city and return ranked POIs for the requested interests."""
     geo = geocode_city(city, user_agent=user_agent)
     interest_list = list(interests or [])
     if query:
@@ -141,15 +199,40 @@ def search_pois(
     overpass_ql = build_overpass_query(
         geo["lat"], geo["lon"], tags, radius_m=radius_m, limit=limit
     )
-    payload = request_json(
-        "POST",
-        OVERPASS_URL,
-        data={"data": overpass_ql},
-        headers=osm_headers(user_agent),
-        timeout=40,
-    )
-    elements = payload.get("elements") if isinstance(payload, dict) else []
+    elements: list[dict[str, Any]] = []
+    overpass_error: str | None = None
+    for endpoint in OVERPASS_URLS:
+        try:
+            payload = request_json(
+                "POST",
+                endpoint,
+                data={"data": overpass_ql},
+                headers=osm_headers(user_agent),
+                timeout=35,
+                retries=2,
+            )
+            elements = payload.get("elements") if isinstance(payload, dict) else []
+            if elements:
+                overpass_error = None
+                break
+            overpass_error = f"{endpoint} returned no elements"
+        except Exception as exc:
+            overpass_error = f"{endpoint}: {exc}"
+            continue
     pois = _parse_elements(elements or [])
+    if not pois:
+        pois = _nominatim_fallback(
+            city,
+            interest_list,
+            query=query,
+            limit=limit,
+            user_agent=user_agent,
+        )
+    if not pois and overpass_error:
+        raise RuntimeError(
+            "OpenStreetMap POI search failed. Overpass instances were busy or blocked "
+            f"({overpass_error}). Wait a moment and try again."
+        )
 
     boosts = feedback_boost_map(city)
     for poi in pois:
