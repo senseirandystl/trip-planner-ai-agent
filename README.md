@@ -19,6 +19,17 @@ The app does more than chat. An agent calls tools against live OpenStreetMap dat
 - **Session persistence** to `data/app_state.json`
 - **Fast mode**, model picker, and an execution-trace viewer
 
+## Skills Demonstrated
+- **Agentic AI / Tool Calling** — OpenAI Responses API with strict function schemas, multi-step tool orchestration, and an execution-trace viewer
+- **External Data Integration** — live Nominatim geocoding and Overpass OSM POI queries, with retries, rate limiting, and multi-endpoint failover
+- **Retrieval-Augmented Generation** — Wikivoyage article fetch, chunking, and TF-IDF / cosine-similarity retrieval with scikit-learn
+- **Guardrails & Validation** — itinerary JSON parsing, POI-id constraints (no hallucinated stops), and single-day refinement checks
+- **Interactive Application Design** — Streamlit session state, sidebar controls, Fast Mode, and PyDeck maps (markers + day path layers)
+- **Feedback Loops** — upvote/downvote persistence (JSONL) that boosts or demotes POIs in later searches
+- **Reliability Engineering** — error handling, OSM User-Agent compliance, Nominatim fallback when Overpass is down
+- **Python Ecosystem** — Python, Streamlit, OpenAI SDK, requests, pandas, scikit-learn, PyDeck
+- **Portfolio-Ready Documentation** — modular `src/` layout, unit tests, setup for Windows/macOS/Linux, and a reproducible local run
+
 ## Architecture
 
 ```text
